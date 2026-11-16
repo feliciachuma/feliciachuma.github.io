@@ -491,10 +491,13 @@ def build_about():
     le = cfg['learning']
     learn = ''
     for it in le['items']:
-        right = e(it['date']) if it['date'] else 'Details added as credentials are verified'
-        if it['link']:
-            right += ' &middot; <a href="%s" rel="noopener" target="_blank">View credential</a>' % e(it['link'])
-        learn += '<li class="reveal"><div><b>%s</b><small>%s</small></div><div class="muted">%s</div></li>' % (e(it['title']), e(it['provider']), right)
+        bits = []
+        if it.get('date'):
+            bits.append(e(it['date']))
+        if it.get('link'):
+            bits.append('<a href="%s" rel="noopener" target="_blank">View credential</a>' % e(it['link']))
+        right_html = ('<div class="muted">%s</div>' % ' &middot; '.join(bits)) if bits else ''
+        learn += '<li class="reveal"><div><b>%s</b><small>%s</small></div>%s</li>' % (e(it['title']), e(it['provider']), right_html)
     ph = cfg['philosophy']
     return '''
 <section class="section" id="about">
@@ -553,9 +556,17 @@ def build_work():
     w = cfg['work']
     f = w['flagship']
     tags = ''.join('<li>%s</li>' % e(t) for t in f['tags'])
-    obj = ''.join('<li>%s</li>' % e(o) for o in f['objectives'])
-    proc = ''.join('<li>%s</li>' % e(p) for p in f['process'])
-    ev = ''.join('<div class="placeholder reveal"><strong>%s</strong>%s <span class="status">In preparation</span></div>' % (e(x['title']), e(x['text'])) for x in f['evidence'])
+    shots = ''
+    for s in f.get('screenshots', []):
+        shots += (
+            '<figure class="work-screenshot reveal">'
+            '<picture>'
+            '<source type="image/webp" srcset="assets/images/%(src)s-600.webp 600w, assets/images/%(src)s-1000.webp 1000w" sizes="(min-width:768px) 500px, 92vw">'
+            '<img src="assets/images/%(src)s-1000.jpg" alt="%(alt)s" width="1024" height="575" loading="lazy" decoding="async">'
+            '</picture>'
+            '<figcaption><strong>%(title)s</strong><span>%(caption)s</span></figcaption>'
+            '</figure>' % dict(src=e(s['src']), alt=e(s['alt']), title=e(s['title']), caption=e(s['caption']))
+        )
     cards = ''
     for p in w['projects']:
         cards += ('<article class="card reveal">%s<h3>%s</h3><p>%s</p><p class="muted"><b>Technologies:</b> %s</p>'
@@ -565,50 +576,47 @@ def build_work():
                      ''.join('<a class="btn ghost" href="%s" rel="noopener">%s</a> ' % (e(l['url']), e(l['label'])) for l in p.get('links', []))))
     if not cards:
         cards = '<div class="placeholder reveal">%s</div>' % w['empty']
-    contribution = ''.join('<p>%s</p>' % x for x in f['contribution'])
     return '''
 <section class="section" id="work">
   <div class="container">
     <div class="section-head reveal"><p class="chapter-label">%(label)s</p><h2>%(heading)s</h2><p class="lede">%(lede)s</p></div>
-    <div class="two-col flagship">
-      <div class="reveal">
-        <span class="status">%(status)s</span>
-        <h3 class="flagship-title">%(title)s</h3>
-        <p class="lede">%(flede)s</p>
-        <ul class="tag-list" style="margin-top:1.2rem">%(tags)s</ul>
+    <div class="flagship-header reveal">
+      <span class="status">%(status)s</span>
+      <h3 class="flagship-title">%(title)s</h3>
+      <p class="lede">%(flede)s</p>
+      <ul class="tag-list" style="margin-top:1.2rem">%(tags)s</ul>
+    </div>
+    <div class="work-brief grid cols-3" style="margin-top:2.5rem">
+      <div class="card reveal">
+        <p class="eyebrow">The Challenge</p>
+        <h4>The Problem</h4>
+        <p>%(problem)s</p>
       </div>
-      <div class="feature reveal"><div class="visual">%(vis)s</div></div>
+      <div class="card reveal">
+        <p class="eyebrow">The Innovation</p>
+        <h4>The Solution</h4>
+        <p>%(solution)s</p>
+      </div>
+      <div class="card reveal">
+        <p class="eyebrow">Guiding Values</p>
+        <h4>Inclusive Tech Mission</h4>
+        <p>%(mission)s</p>
+      </div>
+    </div>
+    <div class="work-gallery grid cols-2" style="margin-top:2.5rem">
+      %(shots)s
     </div>
   </div>
 </section>
 
-<section class="section alt"><div class="container grid cols-2">
-  <div class="reveal"><p class="eyebrow">%(plabel)s</p><h2>%(pheading)s</h2><p>%(problem)s</p></div>
-  <div class="reveal"><p class="eyebrow">%(olabel)s</p><h2>%(oheading)s</h2><ul class="checks">%(obj)s</ul></div>
-</div></section>
-
-<section class="section"><div class="container grid cols-2">
-  <div class="reveal"><p class="eyebrow">%(prlabel)s</p><h2>%(prheading)s</h2><ol class="steps">%(proc)s</ol></div>
-  <div class="reveal"><p class="eyebrow">%(clabel)s</p><h2>%(cheading)s</h2>%(contribution)s</div>
-</div></section>
-
-<section class="section alt" id="evidence"><div class="container">
-  %(evhead)s
-  <div class="grid cols-3">%(ev)s</div>
-</div></section>
-
-<section class="section" id="more"><div class="container">
+<section class="section alt" id="more"><div class="container">
   %(morehead)s
   <div class="grid cols-2">%(cards)s</div>
 </div></section>''' % dict(
         label=e(w['label']), heading=e(w['heading']), lede=e(w['lede']),
-        status=e(f['status']), title=e(f['title']), flede=e(f['lede']), tags=tags, vis=vision_svg(),
-        plabel=e(f['problem_label']), pheading=e(f['problem_heading']), problem=e(f['problem']),
-        olabel=e(f['objectives_label']), oheading=e(f['objectives_heading']), obj=obj,
-        prlabel=e(f['process_label']), prheading=e(f['process_heading']), proc=proc,
-        clabel=e(f['contribution_label']), cheading=e(f['contribution_heading']), contribution=contribution,
-        evhead=section_head(f['evidence_label'], f['evidence_heading'], f['evidence_lede']), ev=ev,
-        morehead=section_head(w['more_label'], w['more_heading']), cards=cards)
+        status=e(f['status']), title=e(f['title']), flede=e(f['lede']), tags=tags,
+        problem=e(f['problem']), solution=e(f['solution']), mission=e(f['mission']),
+        shots=shots, morehead=section_head(w['more_label'], w['more_heading']), cards=cards)
 
 
 def build_community():

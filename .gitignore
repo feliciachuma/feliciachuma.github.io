@@ -1,0 +1,24 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Ignore all Markdown files (original blog sources/drafts, planning documents, agent instructions)
+*.md
+*.MD
+**/*.md
+**/*.MD
+
+# Allow only the public README for GitHub
+!README.md
+!README.MD
+!readme.md
+
+# OS generated files
+.DS_Store
+Thumbs.db
